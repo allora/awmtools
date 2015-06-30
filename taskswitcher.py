@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
-import sys, getopt
+import sys, getopt, math
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
+VERSION = "0.0.1"
+
 def printHelp():
+    print( "taskswitcher v",VERSION )
     print( "taskswitcher help:\n\
       -h: this help\n\
       -u: select window above\n\
@@ -12,6 +15,20 @@ def printHelp():
       -r: select window to the right\n\
       -b: enlarge the buffer space for window picking\n\
             Example: taskswitcher -b 20" )
+
+def getDistBetweenWindows( window1, window2 ):
+    x1,y1,width1,height1 = window1.get_geometry()
+    x2,y2,width2,height2 = window2.get_geometry()
+
+    x1Adjusted = x1 + ( width1/2 )
+    x2Adjusted = x2 + ( width2/2 )
+
+    y1Adjusted = y1 + ( height1/2 )
+    y2Adjusted = y2 + ( height2/2 )
+
+    dist = math.hypot( x2Adjusted - x1Adjusted, y2Adjusted - y1Adjusted )
+
+    return dist
 
 def findWindow( direction, window_list, workspace_id, active_window, buff ):
     actx, acty, actwidth, actheight = active_window.get_geometry()
@@ -34,111 +51,29 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
 
                 if direction == "UP":
                     if winy < acty:
-                        print( "Adding up windows" )
                         valid_destinations.extend( [window] )
                 elif direction == "DOWN":
                     if winy > act_abs_height:
-                        print( "Adding down windows" )
                         valid_destinations.extend( [window] )
                 elif direction == "RIGHT":
                     if winx > act_abs_width:
-                        print( "Adding right windows" )
                         valid_destinations.extend( [window] )
                 elif direction == "LEFT":
                     if winx < actx:
-                        print( "Adding left windows" )
                         valid_destinations.extend( [window] )
 
-    initial = True
-    nearestY = -1
-    nearestX = -1
-    xDelta = -1
-    yDelta = -1
-    print( "Number of windows:", len( valid_destinations ) )
+    closestDistance = -1.0
     for window in valid_destinations:
-        winx, winy, winwidth, winheight = window.get_geometry()
-        curYDelta = abs( ( acty ) - ( winy ) )
-        curXDelta = abs( ( actx ) - ( winx ) )
+        curDist = getDistBetweenWindows( window, active_window )
 
-        if direction == "UP":
-            if initial == True:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-                initial = False
-                continue
+        if closestDistance == -1.0:
+            closestDistance = curDist
+            dest_window = window
+            continue
 
-            if curXDelta <= xDelta and curYDelta < yDelta:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-
-
-        if direction == "DOWN":
-            print( "******", window.get_name() )
-            print( nearestY, winy, curYDelta, curXDelta )
-            if initial == True:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-                initial = False
-                continue
-
-            if curXDelta <= xDelta and curYDelta < yDelta:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-
-
-        if direction == "RIGHT":
-            if initial == True:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-                initial = False
-                continue
-
-            if curYDelta <= yDelta and curXDelta > xDelta:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-
-        if direction == "LEFT":
-            if initial == True:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
-                initial = False
-                continue
-
-            if curYDelta <= yDelta and curXDelta < xDelta:
-                print( "set a window" )
-                xDelta = curXDelta
-                yDelta = curYDelta
-                nearestY = winy
-                nearestX = winx
-                dest_window = window
+        if curDist < closestDistance:
+            closestDistance = curDist
+            dest_window = window
 
     return dest_window
 
