@@ -35,6 +35,9 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
 
+    adjustedActX = actx + ( actwidth/2 )
+    adjustedActY = acty + ( actheight/2 )
+
     dest_window = None
 
     valid_destinations = []
@@ -49,17 +52,20 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
 
                 winx, winy, winwidth, winheight = window.get_geometry()
 
+                adjustedWinX = winx + ( winwidth/2 )
+                adjustedWinY = winy + ( winheight/2 )
+
                 if direction == "UP":
-                    if winy < acty:
+                    if adjustedWinY < adjustedActY - buff:
                         valid_destinations.extend( [window] )
                 elif direction == "DOWN":
-                    if winy > act_abs_height:
+                    if adjustedWinY > ( act_abs_height/2 ) + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "RIGHT":
-                    if winx > act_abs_width:
+                    if adjustedWinX > ( act_abs_width/2 ) + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "LEFT":
-                    if winx < actx:
+                    if adjustedWinX < adjustedActX - buff:
                         valid_destinations.extend( [window] )
 
     closestDistance = -1.0
