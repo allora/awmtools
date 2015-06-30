@@ -3,7 +3,7 @@
 import sys, getopt, math
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-1"
+VERSION = "0.0.1-2"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -35,9 +35,6 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
 
-    adjustedActX = actx + ( actwidth/2 )
-    adjustedActY = acty + ( actheight/2 )
-
     dest_window = None
 
     valid_destinations = []
@@ -52,20 +49,17 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
 
                 winx, winy, winwidth, winheight = window.get_geometry()
 
-                adjustedWinX = winx + ( winwidth/2 )
-                adjustedWinY = winy + ( winheight/2 )
-
                 if direction == "UP":
-                    if adjustedWinY < adjustedActY - buff:
+                    if winy < acty - buff:
                         valid_destinations.extend( [window] )
                 elif direction == "DOWN":
-                    if adjustedWinY > ( act_abs_height/2 ) + buff:
+                    if winy > act_abs_height + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "RIGHT":
-                    if adjustedWinX > ( act_abs_width/2 ) + buff:
+                    if winx > act_abs_width + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "LEFT":
-                    if adjustedWinX < adjustedActX - buff:
+                    if winx < actx - buff:
                         valid_destinations.extend( [window] )
 
     closestDistance = -1.0
@@ -91,7 +85,7 @@ def main(argv):
         printHelp()
         sys.exit(2)
 
-    buff = 10
+    buff = 0
 
     try:
         opts, args = getopt.getopt(argv,"hudlrb:")
