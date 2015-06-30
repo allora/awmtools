@@ -3,7 +3,7 @@
 import sys, getopt, math
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1"
+VERSION = "0.0.1-1"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
