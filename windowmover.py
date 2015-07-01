@@ -49,8 +49,8 @@ def main(argv):
         newx = xpos
         newy = ypos
     else:
-        newx = ( ( x + ( width / 2 ) ) + xpos
-        newy = ( ( y + ( height / 2 ) ) + ypos
+        newx = ( x + ( width / 2 ) ) + xpos
+        newy = ( y + ( height / 2 ) ) + ypos
 
     moveMask = None
     if newx != 0:
