@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
-import sys, getopt, math
+import sys, getopt
+from math import atan2, degrees, pi, hypot
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-2"
+VERSION = "0.0.1-3"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -13,8 +14,7 @@ def printHelp():
       -d: select window below\n\
       -l: select window to the left\n\
       -r: select window to the right\n\
-      -b: enlarge the buffer space for window picking\n\
-            Example: taskswitcher -b 20" )
+      -v: verbose mode" )
 
 def getDistBetweenWindows( window1, window2 ):
     x1,y1,width1,height1 = window1.get_geometry()
@@ -26,11 +26,28 @@ def getDistBetweenWindows( window1, window2 ):
     y1Adjusted = y1 + ( height1/2 )
     y2Adjusted = y2 + ( height2/2 )
 
-    dist = math.hypot( x2Adjusted - x1Adjusted, y2Adjusted - y1Adjusted )
+    dist = hypot( x2Adjusted - x1Adjusted, y2Adjusted - y1Adjusted )
 
     return dist
 
-def findWindow( direction, window_list, workspace_id, active_window, buff ):
+def getAngleBetweenWindows( window1, window2 ):
+    x1,y1,w1,h1 = window1.get_geometry()
+    x2,y2,w2,h2 = window2.get_geometry()
+
+    dx = x2 - x1
+    dy = y2 - y1
+
+    rads = atan2(dy,dx)
+
+    return degrees(rads)
+
+def compareAngles( a1, a2, desiredAngle ):
+    a1Delta = desiredAngle - a1
+    a2Delta = desiredAngle - a2
+
+    return abs( a1Delta ) <= abs( a2Delta )
+
+def findWindow( direction, window_list, workspace_id, active_window, buff, verbose ):
     actx, acty, actwidth, actheight = active_window.get_geometry()
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
@@ -63,17 +80,47 @@ def findWindow( direction, window_list, workspace_id, active_window, buff ):
                         valid_destinations.extend( [window] )
 
     closestDistance = -1.0
+    closestAngle = -360.0
     for window in valid_destinations:
-        curDist = getDistBetweenWindows( window, active_window )
+        curDist = getDistBetweenWindows( active_window, window )
+        curAngle = getAngleBetweenWindows( active_window, window )
+
+        if verbose:
+            print( "************************************************" )
+            print( "Testing Window:",window.get_name() )
+            print( "CurAngle:", curAngle )
+            print( "ClosestAngle:", closestAngle )
+            print( "CurDist:", curDist )
+            print( "ClosestDist:", closestDistance )
 
         if closestDistance == -1.0:
             closestDistance = curDist
+            closestAngle = curAngle
             dest_window = window
             continue
 
         if curDist < closestDistance:
-            closestDistance = curDist
-            dest_window = window
+            if direction == "UP":
+                if compareAngles( curAngle, closestAngle, -90.0 ):
+                    if closestDistance > curDist:
+                        closestDistance = curDist
+                        closestAngle = curAngle
+                        dest_window = window
+            if direction == "DOWN":
+                if compareAngles( curAngle, closestAngle, 90.0 ):
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
+            if direction == "RIGHT":
+                if compareAngles( curAngle, closestAngle, 0.0 ):
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
+            if direction == "LEFT":
+                if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
 
     return dest_window
 
@@ -88,12 +135,13 @@ def main(argv):
     buff = 0
 
     try:
-        opts, args = getopt.getopt(argv,"hudlrb:")
+        opts, args = getopt.getopt(argv,"hudlrb:v")
     except getopt.GetoptError as err:
         printHelp()
         sys.exit(2)
 
     direction = ""
+    verbose = False
 
     for opt, arg in opts:
         if opt == "-h":
@@ -109,6 +157,8 @@ def main(argv):
             direction = "RIGHT"
         elif opt == "-b":
             buff = int(arg)
+        elif opt == "-v":
+            verbose = True
 
     # Grab window list and geo
     Gtk.init([])  # necessary if not using a Gtk.main() loop
@@ -121,7 +171,7 @@ def main(argv):
     workspace_id = screen.get_active_workspace().get_number()
 
     if len(window_list) > 0:
-        window = findWindow( direction, window_list, workspace_id, active_window, buff )
+        window = findWindow( direction, window_list, workspace_id, active_window, buff, verbose )
     else:
         print( "Empty window list!" )
         sys.exit(2)
