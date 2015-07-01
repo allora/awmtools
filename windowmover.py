@@ -22,8 +22,8 @@ def main(argv):
         sys.exit(2)
 
     absolute = False
-    xpos = 0.0
-    ypos = 0.0
+    xpos = 0
+    ypos = 0
 
     for opt, arg in opts:
         if opt == "-a":
