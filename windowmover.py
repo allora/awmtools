@@ -49,8 +49,8 @@ def main(argv):
         newx = xpos
         newy = ypos
     else:
-        newx = ( x + ( width / 2 ) ) + xpos
-        newy = ( y + ( height / 2 ) ) + ypos
+        newx = x + xpos
+        newy = y + ypos
 
     moveMask = None
     if newx != 0:
@@ -61,7 +61,7 @@ def main(argv):
     print( "Old X:", x, "New X:", newx )
     print( "Old Y:", y, "New Y:", newy )
 
-    active_window.set_geometry( Wnck.WindowGravity.CENTER, moveMask, newx, newy, width, height )
+    active_window.set_geometry( Wnck.WindowGravity.NORTHWEST, moveMask, newx, newy, width, height )
 
 if __name__ == "__main__":
     main(sys.argv[1:])
