@@ -45,18 +45,26 @@ def main(argv):
 
     x,y,width,height = active_window.get_geometry()
 
+    newx = 0
+    newy = 0
+
     if absolute == True:
         newx = xpos
         newy = ypos
     else:
-        newx = x + xpos
-        newy = y + ypos
+        if xpos != 0:
+            newx = x + xpos
+        if ypos != 0:
+            newy = y + ypos
 
     moveMask = None
     if newx != 0:
         moveMask = Wnck.WindowMoveResizeMask.X
     if newy != 0:
-        moveMask = moveMask | Wnck.WindowMoveResizeMask.Y
+        if moveMask == None:
+            moveMask = Wnck.WindowMoveResizeMask.Y
+        else:
+            moveMask = moveMask | Wnck.WindowMoveResizeMask.Y
 
     print( "Old X:", x, "New X:", newx )
     print( "Old Y:", y, "New Y:", newy )
