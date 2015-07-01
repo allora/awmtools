@@ -3,7 +3,7 @@
 import sys, getopt
 from gi.repository import Gtk, Wnck
 
-VERSION = "0.0.1-1"
+VERSION = "0.0.1-2"
 
 def printHelp():
     print( "Help stuff!" )
@@ -16,12 +16,13 @@ def main(argv):
         sys.exit(2)
 
     try:
-        opts, args = getopt.getopt( argv,"ax:y:" )
+        opts, args = getopt.getopt( argv,"ax:y:v" )
     except getopt.GetoptError as err:
         printHelp()
         sys.exit(2)
 
     absolute = False
+    verbose = False
     xpos = 0
     ypos = 0
 
@@ -35,6 +36,8 @@ def main(argv):
             xpos = float(arg)
         elif opt == "-y":
             ypos = float(arg)
+        elif opt == "-v":
+            verbose = True
 
     # Grab window list
     Gtk.init([])
@@ -66,8 +69,9 @@ def main(argv):
         else:
             moveMask = moveMask | Wnck.WindowMoveResizeMask.Y
 
-    print( "Old X:", x, "New X:", newx )
-    print( "Old Y:", y, "New Y:", newy )
+    if verbose == True:
+        print( "Old X:", x, "New X:", newx )
+        print( "Old Y:", y, "New Y:", newy )
 
     active_window.set_geometry( Wnck.WindowGravity.NORTHWEST, moveMask, newx, newy, width, height )
 
