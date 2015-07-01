@@ -4,7 +4,7 @@ import sys, getopt
 from math import atan2, degrees, pi, hypot
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-3"
+VERSION = "0.0.1-4"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -70,10 +70,10 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
                     if winy < acty - buff:
                         valid_destinations.extend( [window] )
                 elif direction == "DOWN":
-                    if winy > act_abs_height + buff:
+                    if winy > acty + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "RIGHT":
-                    if winx > act_abs_width + buff:
+                    if winx > actx + buff:
                         valid_destinations.extend( [window] )
                 elif direction == "LEFT":
                     if winx < actx - buff:
@@ -108,19 +108,22 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
                         dest_window = window
             if direction == "DOWN":
                 if compareAngles( curAngle, closestAngle, 90.0 ):
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+                    if closestDistance > curDist:
+                        closestDistance = curDist
+                        closestAngle = curAngle
+                        dest_window = window
             if direction == "RIGHT":
                 if compareAngles( curAngle, closestAngle, 0.0 ):
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+                    if closestDistance > curDist:
+                        closestDistance = curDist
+                        closestAngle = curAngle
+                        dest_window = window
             if direction == "LEFT":
                 if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+                    if closestDistance > curDist:
+                        closestDistance = curDist
+                        closestAngle = curAngle
+                        dest_window = window
 
     return dest_window
 
