@@ -61,7 +61,7 @@ def main(argv):
     print( "Old X:", x, "New X:", newx )
     print( "Old Y:", y, "New Y:", newy )
     
-    active_window.set_geometry( 0, moveMask, newx, newy, width, height )
+    active_window.set_geometry( Wnck.WindowGravity.NORTHWEST, moveMask, newx, newy, width, height )
 
 if __name__ == "__main__":
     main(sys.argv[1:])
