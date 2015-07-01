@@ -51,8 +51,13 @@ def main(argv):
     else:
         newx = x+xpos
         newy = y+ypos
+
+    moveMask = None
+    if newx != 0:
+        moveMask = Wnck.WindowMoveResizeMask.X
+    if newy != 0:
+        moveMask = moveMask | Wnck.WindowMoveResizeMask.Y
     
-    moveMask = Wnck.WindowMoveResizeMask.X | Wnck.WindowMoveResizeMask.Y 
     active_window.set_geometry( 0, moveMask, newx, newy, width, height )
 
 if __name__ == "__main__":
