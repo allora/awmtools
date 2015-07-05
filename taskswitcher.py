@@ -4,7 +4,7 @@ import sys, getopt
 from math import atan2, degrees, pi, hypot
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-4"
+VERSION = "0.0.1-5"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -14,6 +14,7 @@ def printHelp():
       -d: select window below\n\
       -l: select window to the left\n\
       -r: select window to the right\n\
+      -b: buffer around active window to pick adjacent windows\n\
       -v: verbose mode" )
 
 def getDistBetweenWindows( window1, window2 ):
@@ -204,38 +205,13 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             dest_window = window
             continue
 
-        if direction == "UP":
-            if closestDistance > curDist:
-                #if compareAngles( curAngle, closestAngle, -90.0 ):
-                closestDistance = curDist
-                closestAngle = curAngle
-                if verbose:
-                    print( "Picked:", window.get_name() )
-                dest_window = window
-        if direction == "DOWN":
-            if closestDistance > curDist:
-                #if compareAngles( curAngle, closestAngle, 90.0 ):
-                closestDistance = curDist
-                closestAngle = curAngle
-                if verbose:
-                    print( "Picked:", window.get_name() )
-                dest_window = window
-        if direction == "RIGHT":
-            if closestDistance > curDist:
-                #if compareAngles( curAngle, closestAngle, 0.0 ):
-                closestDistance = curDist
-                closestAngle = curAngle
-                if verbose:
-                    print( "Picked:", window.get_name() )
-                dest_window = window
-        if direction == "LEFT":
-            if closestDistance > curDist:
-                #if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
-                closestDistance = curDist
-                closestAngle = curAngle
-                if verbose:
-                    print( "Picked:", window.get_name() )
-                dest_window = window
+        if closestDistance > curDist:
+            #if compareAngles( curAngle, closestAngle, -90.0 ):
+            closestDistance = curDist
+            closestAngle = curAngle
+            if verbose:
+                print( "Picked:", window.get_name() )
+            dest_window = window
 
     return dest_window
 
