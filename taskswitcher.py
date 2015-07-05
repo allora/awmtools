@@ -173,8 +173,8 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
         x,y,w,h = window.get_geometry()
         if isInValidDirection( direction, curAngle, 5 ):
             if verbose:
-                print( "Angle is in the right direction treat it 50% closer" )
-            curDist = curDist * 0.5
+                print( "Angle is in the right direction treat it 70% closer" )
+            curDist = curDist * 0.3
         elif isInValidDirection( direction, curAngle, 20 ):
             if verbose:
                 print( "Angle is in the right direction treat it 50% closer" )
