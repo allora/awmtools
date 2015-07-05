@@ -103,6 +103,9 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
         if window.is_skip_tasklist() == True:
             continue
 
+        if window.is_minimized() == True:
+            continue
+
         window_workspaceid = window.get_workspace().get_number()
         if window_workspaceid == workspace_id:
             if window != active_window:
