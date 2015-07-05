@@ -34,8 +34,8 @@ def getAngleBetweenWindows( window1, window2 ):
     x1,y1,w1,h1 = window1.get_geometry()
     x2,y2,w2,h2 = window2.get_geometry()
 
-    dx = x2 - x1
-    dy = y2 - y1
+    dx = ( x2 + ( w2/2 ) ) - ( x1 + ( w1/2 ) )
+    dy = ( y2 + ( h2/2 ) ) - ( y1 + ( h1/2 ) )
 
     rads = atan2(dy,dx)
 
@@ -47,15 +47,45 @@ def compareAngles( a1, a2, desiredAngle ):
 
     return abs( a1Delta ) <= abs( a2Delta )
 
+def isOverlapped( sxl, sxr, syt, syb, x, y, w, h ):
+    # Check top left coordinate
+    isValidXT = sxl <= x and sxr >= x
+    isValidYT = syt <= y and syb >= y
+
+    #check bot right coordinates
+    isValidXB = sxl <= x+w and sxr >= x+w
+    isValidYB = syt <= y+h and syb >= y+h
+
+    return ( isValidXB or isValidXT ) and ( isValidYB or isValidYT )
+
+def isInValidDirection( direction, windowDirection, delta ):
+    if direction == "UP":
+        return windowDirection <= ( -90 + delta ) and windowDirection >= ( -90 - delta )
+
+    if direction == "DOWN":
+        return windowDirection <= ( 90 + delta ) and windowDirection >= ( 90 - delta )
+
+    if direction == "RIGHT":
+        return windowDirection <= ( 0 + delta ) and windowDirection >= ( 0 - delta )
+
+    if direction == "LEFT":
+        isLeft = windowDirection <= ( -180 + delta ) and windowDirection >= -180
+        isLeft = isLeft or ( windowDirection >= ( 180 - delta ) and windowDirection <= 180 )
+        return isLeft
+
 def findWindow( direction, window_list, workspace_id, active_window, buff, verbose ):
     actx, acty, actwidth, actheight = active_window.get_geometry()
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
 
+    actCenterX = actx + ( actwidth / 2 )
+    actCenterY = acty + ( actheight / 2 )
+
     dest_window = None
 
     valid_destinations = []
 
+    # Do a quick filter of all windows in the desired direction
     for window in window_list:
         if window.is_skip_tasklist() == True:
             continue
@@ -65,23 +95,51 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             if window != active_window:
 
                 winx, winy, winwidth, winheight = window.get_geometry()
+                winCenterX = winx + ( winwidth / 2 )
+                winCenterY = winy + ( winheight / 2 )
 
                 if direction == "UP":
-                    if winy < acty - buff:
+                    if winCenterY < actCenterY:
                         valid_destinations.extend( [window] )
                 elif direction == "DOWN":
-                    if winy > acty + buff:
+                    if winCenterY > actCenterY:
                         valid_destinations.extend( [window] )
                 elif direction == "RIGHT":
-                    if winx > actx + buff:
+                    if winCenterX > actCenterX:
                         valid_destinations.extend( [window] )
                 elif direction == "LEFT":
-                    if winx < actx - buff:
+                    if winCenterX < actCenterX:
                         valid_destinations.extend( [window] )
 
+
+    # Find adjacent windows
+    selectXLeft = actCenterX - actwidth - buff
+    selectXRight = actCenterX + actwidth + buff
+    selectYTop = actCenterY - actheight - buff
+    selectYBot = actCenterY + actheight + buff
+
+    adjacent_windows = []
+    nonadjacent_windows = []
+    for window in valid_destinations:
+        x,y,w,h = window.get_geometry()
+
+        if isOverlapped( selectXLeft, selectXRight, selectYTop, selectYBot, x, y, w, h ):
+            adjacent_windows.extend( [window] )
+        else:
+            nonadjacent_windows.extend( [window] )
+
+    selectable_windows = []
+    if len(adjacent_windows) > 0:
+        selectable_windows.extend( adjacent_windows )
+        if verbose:
+            print( "There are adjacent windows!" )
+
+    selectable_windows.extend( nonadjacent_windows )
+
+    # Find the best window
     closestDistance = -1.0
     closestAngle = -360.0
-    for window in valid_destinations:
+    for window in selectable_windows:
         curDist = getDistBetweenWindows( active_window, window )
         curAngle = getAngleBetweenWindows( active_window, window )
 
@@ -93,37 +151,51 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             print( "CurDist:", curDist )
             print( "ClosestDist:", closestDistance )
 
+        if not isInValidDirection( direction, curAngle, 50 ):
+            if verbose:
+                print( "Angle is outside of filter" )
+            continue
+
+        if isInValidDirection( direction, curAngle, 5 ):
+            if verbose:
+                print( "Angle is in the right direction treat it 50% closer" )
+            curDist = curDist * 0.5
+        else:
+            if isInValidDirection( direction, curAngle, 40 ):
+                if verbose:
+                    print( "Angle is in the right direction treat it 40% closer" )
+                curDist = curDist * 0.6
+
         if closestDistance == -1.0:
             closestDistance = curDist
             closestAngle = curAngle
             dest_window = window
             continue
 
-        if curDist < closestDistance:
-            if direction == "UP":
-                if compareAngles( curAngle, closestAngle, -90.0 ):
-                    if closestDistance > curDist:
-                        closestDistance = curDist
-                        closestAngle = curAngle
-                        dest_window = window
-            if direction == "DOWN":
-                if compareAngles( curAngle, closestAngle, 90.0 ):
-                    if closestDistance > curDist:
-                        closestDistance = curDist
-                        closestAngle = curAngle
-                        dest_window = window
-            if direction == "RIGHT":
-                if compareAngles( curAngle, closestAngle, 0.0 ):
-                    if closestDistance > curDist:
-                        closestDistance = curDist
-                        closestAngle = curAngle
-                        dest_window = window
-            if direction == "LEFT":
-                if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
-                    if closestDistance > curDist:
-                        closestDistance = curDist
-                        closestAngle = curAngle
-                        dest_window = window
+        if direction == "UP":
+            if compareAngles( curAngle, closestAngle, -90.0 ):
+                if closestDistance > curDist:
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
+        if direction == "DOWN":
+            if compareAngles( curAngle, closestAngle, 90.0 ):
+                if closestDistance > curDist:
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
+        if direction == "RIGHT":
+            if compareAngles( curAngle, closestAngle, 0.0 ):
+                if closestDistance > curDist:
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
+        if direction == "LEFT":
+            if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
+                if closestDistance > curDist:
+                    closestDistance = curDist
+                    closestAngle = curAngle
+                    dest_window = window
 
     return dest_window
 
@@ -135,7 +207,7 @@ def main(argv):
         printHelp()
         sys.exit(2)
 
-    buff = 0
+    buff = 20
 
     try:
         opts, args = getopt.getopt(argv,"hudlrb:v")
