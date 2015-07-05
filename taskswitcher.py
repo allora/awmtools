@@ -73,6 +73,18 @@ def isInValidDirection( direction, windowDirection, delta ):
         isLeft = isLeft or ( windowDirection >= ( 180 - delta ) and windowDirection <= 180 )
         return isLeft
 
+def isInCardinalDirection( direction, ax, ay, aw, ah, x, y, w, h ):
+    # Vertical
+    if direction == "UP" or direction == "DOWN":
+        isValidXL = ax <= x and ax+aw >= x
+        isValidXR = ax <= x+w and ax+aw >= x+w
+        return isValidXL or isValidXR
+    if direction == "LEFT" or direction == "RIGHT":
+        isValidYT = ay <= y and ay+ah >= y
+        isValidYB = ay <= y+h and ay+ah >= y+h
+        return isValidYT or isValidYB
+
+
 def findWindow( direction, window_list, workspace_id, active_window, buff, verbose ):
     actx, acty, actwidth, actheight = active_window.get_geometry()
     act_abs_width = actx + actwidth
@@ -151,51 +163,79 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             print( "CurDist:", curDist )
             print( "ClosestDist:", closestDistance )
 
+        # Filter out windows that are too far out of angle
         if not isInValidDirection( direction, curAngle, 50 ):
             if verbose:
                 print( "Angle is outside of filter" )
             continue
 
+        # Reduce distance based on angle correctness
+        x,y,w,h = window.get_geometry()
         if isInValidDirection( direction, curAngle, 5 ):
             if verbose:
                 print( "Angle is in the right direction treat it 50% closer" )
             curDist = curDist * 0.5
-        else:
-            if isInValidDirection( direction, curAngle, 40 ):
-                if verbose:
-                    print( "Angle is in the right direction treat it 40% closer" )
-                curDist = curDist * 0.6
+        elif isInValidDirection( direction, curAngle, 20 ):
+            if verbose:
+                print( "Angle is in the right direction treat it 50% closer" )
+            curDist = curDist * 0.5
+        elif isInValidDirection( direction, curAngle, 30 ):
+            if verbose:
+                print( "Angle is in the right direction treat it 20% closer" )
+            curDist = curDist * 0.8
+
+        # Bonus reduciton if in cardinal direction
+        if isInCardinalDirection( direction, actx, acty, actwidth, actheight, x, y, w, h ):
+            if verbose:
+                print( "Window in cardinal direction, treat it 50% closer" )
+            curDist = curDist * 0.5
+
+        # Bonus reduction if in adjacent list
+        if window in adjacent_windows:
+            if verbose:
+                print( "Window is part of adjacent list, treat it 90% closer" )
+            curDist = curDist * 0.1
 
         if closestDistance == -1.0:
             closestDistance = curDist
             closestAngle = curAngle
+            if verbose:
+                print( "Window picked:", window.get_name() )
             dest_window = window
             continue
 
         if direction == "UP":
-            if compareAngles( curAngle, closestAngle, -90.0 ):
-                if closestDistance > curDist:
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+            if closestDistance > curDist:
+                #if compareAngles( curAngle, closestAngle, -90.0 ):
+                closestDistance = curDist
+                closestAngle = curAngle
+                if verbose:
+                    print( "Picked:", window.get_name() )
+                dest_window = window
         if direction == "DOWN":
-            if compareAngles( curAngle, closestAngle, 90.0 ):
-                if closestDistance > curDist:
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+            if closestDistance > curDist:
+                #if compareAngles( curAngle, closestAngle, 90.0 ):
+                closestDistance = curDist
+                closestAngle = curAngle
+                if verbose:
+                    print( "Picked:", window.get_name() )
+                dest_window = window
         if direction == "RIGHT":
-            if compareAngles( curAngle, closestAngle, 0.0 ):
-                if closestDistance > curDist:
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+            if closestDistance > curDist:
+                #if compareAngles( curAngle, closestAngle, 0.0 ):
+                closestDistance = curDist
+                closestAngle = curAngle
+                if verbose:
+                    print( "Picked:", window.get_name() )
+                dest_window = window
         if direction == "LEFT":
-            if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
-                if closestDistance > curDist:
-                    closestDistance = curDist
-                    closestAngle = curAngle
-                    dest_window = window
+            if closestDistance > curDist:
+                #if compareAngles( abs( curAngle ), abs( closestAngle ), 180.0 ):
+                closestDistance = curDist
+                closestAngle = curAngle
+                if verbose:
+                    print( "Picked:", window.get_name() )
+                dest_window = window
 
     return dest_window
 
