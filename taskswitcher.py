@@ -4,7 +4,7 @@ import sys, getopt
 from math import atan2, degrees, pi, hypot
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-5"
+VERSION = "0.0.1-6"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -106,7 +106,11 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
         if window.is_minimized() == True:
             continue
 
-        window_workspaceid = window.get_workspace().get_number()
+        if window.is_sticky() == True:
+            window_workspaceid = workspace_id
+        else:
+            window_workspaceid = window.get_workspace().get_number()
+
         if window_workspaceid == workspace_id:
             if window != active_window:
 
