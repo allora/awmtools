@@ -4,18 +4,19 @@ import sys, getopt
 from math import atan2, degrees, pi, hypot
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
-VERSION = "0.0.1-6"
+VERSION = "0.0.1-7"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
-    print( "taskswitcher help:\n\
+    print( "Usage:\n\
+      taskswitcher [-h] [-v] [-u] [-d] [-l] [-r] [-b]\n\
       -h: this help\n\
-      -u: select window above\n\
-      -d: select window below\n\
-      -l: select window to the left\n\
-      -r: select window to the right\n\
-      -b: buffer around active window to pick adjacent windows\n\
-      -v: verbose mode" )
+      -v: verbose mode\n\
+      -u: select move up\n\
+      -d: select move down\n\
+      -l: select move left\n\
+      -r: select move right\n\
+      -b: buffer around active window to pick adjacent windows" )
 
 def getDistBetweenWindows( window1, window2 ):
     x1,y1,width1,height1 = window1.get_geometry()
