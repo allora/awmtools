@@ -60,14 +60,7 @@ def main(argv):
         if ypos != 0:
             newy = y + ypos
 
-    moveMask = None
-    if newx != 0:
-        moveMask = Wnck.WindowMoveResizeMask.X
-    if newy != 0:
-        if moveMask == None:
-            moveMask = Wnck.WindowMoveResizeMask.Y
-        else:
-            moveMask = moveMask | Wnck.WindowMoveResizeMask.Y
+    moveMask = Wnck.WindowMoveResizeMask.X | Wnck.WindowMoveResizeMask.Y
 
     if verbose == True:
         print( "Old X:", x, "New X:", newx )
