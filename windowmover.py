@@ -1,6 +1,11 @@
 #!/usr/bin/python
 
 import sys, getopt
+import gi
+gi.require_version('Wnck', '3.0')
+gi.require_version('GdkX11', '3.0')
+gi.require_version('Gtk', '3.0')
+
 from gi.repository import Gtk, Wnck
 
 VERSION = "0.0.1-2"
