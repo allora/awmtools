@@ -2,6 +2,10 @@
 
 import sys, getopt
 from math import atan2, degrees, pi, hypot
+import gi
+gi.require_version('Wnck', '3.0')
+gi.require_version('GdkX11', '3.0')
+gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Wnck, GdkX11, Gdk
 
 VERSION = "0.0.1-7"
