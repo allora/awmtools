@@ -2,11 +2,14 @@
 
 import sys, getopt
 from math import atan2, degrees, pi, hypot
-import gi
-gi.require_version('Wnck', '3.0')
-gi.require_version('GdkX11', '3.0')
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Wnck, GdkX11, Gdk
+#import gi
+#gi.require_version('Wnck', '3.0')
+#gi.require_version('GdkX11', '3.0')
+#gi.require_version('Gtk', '3.0')
+#from gi.repository import Gtk, Wnck, GdkX11, Gdk
+from ewmh import EWMH
+
+ewmh = EWMH()
 
 VERSION = "0.0.1-7"
 
@@ -22,9 +25,24 @@ def printHelp():
       -r: select move right\n\
       -b: buffer around active window to pick adjacent windows" )
 
-def getDistBetweenWindows( window1, window2 ):
-    x1,y1,width1,height1 = window1.get_geometry()
-    x2,y2,width2,height2 = window2.get_geometry()
+def getFrame( window ):
+    frame = window
+    while frame.query_tree().parent != ewmh.root:
+        frame = frame.query_tree().parent
+    return frame
+
+def getDistBetweenWindows( window1, window2, verbose ):
+    winInfo1 = window1.get_geometry()
+    winInfo2 = window2.get_geometry()
+
+    x2 = winInfo2.x
+    y2 = winInfo2.y
+    width2 = winInfo2.width
+    height2 = winInfo2.height
+    x1 = winInfo1.x
+    y1 = winInfo1.y
+    width1 = winInfo1.width
+    height1 = winInfo1.height
 
     x1Adjusted = x1 + ( width1/2 )
     x2Adjusted = x2 + ( width2/2 )
@@ -34,16 +52,33 @@ def getDistBetweenWindows( window1, window2 ):
 
     dist = hypot( x2Adjusted - x1Adjusted, y2Adjusted - y1Adjusted )
 
+    if verbose:
+        print( "Distance betweeen ", ewmh.getWmName(window1), " and ", ewmh.getWmName(window2), ": ", dist )
+
     return dist
 
-def getAngleBetweenWindows( window1, window2 ):
-    x1,y1,w1,h1 = window1.get_geometry()
-    x2,y2,w2,h2 = window2.get_geometry()
+def getAngleBetweenWindows( window1, window2, rotOutput ):
+    winInfo1 = window1.get_geometry()
+    winInfo2 = window2.get_geometry()
+    #x1,y1,w1,h1 = window1.get_geometry()
+    #x2,y2,w2,h2 = window2.get_geometry()
+
+    x2 = winInfo2.x
+    y2 = winInfo2.y
+    w2 = winInfo2.width
+    h2 = winInfo2.height
+    x1 = winInfo1.x
+    y1 = winInfo1.y
+    w1 = winInfo1.width
+    h1 = winInfo1.height
 
     dx = ( x2 + ( w2/2 ) ) - ( x1 + ( w1/2 ) )
     dy = ( y2 + ( h2/2 ) ) - ( y1 + ( h1/2 ) )
 
     rads = atan2(dy,dx)
+
+    if rotOutput:
+        return degrees(rads) + 90
 
     return degrees(rads)
 
@@ -64,7 +99,9 @@ def isOverlapped( sxl, sxr, syt, syb, x, y, w, h ):
 
     return ( isValidXB or isValidXT ) and ( isValidYB or isValidYT )
 
-def isInValidDirection( direction, windowDirection, delta ):
+def isInValidDirection( direction, windowDirection, delta, verbose ):
+    if verbose:
+        print( "Direction Delta:", delta )
     if direction == "UP":
         return windowDirection <= ( -90 + delta ) and windowDirection >= ( -90 - delta )
 
@@ -91,8 +128,13 @@ def isInCardinalDirection( direction, ax, ay, aw, ah, x, y, w, h ):
         return isValidYT or isValidYB
 
 
-def findWindow( direction, window_list, workspace_id, active_window, buff, verbose ):
-    actx, acty, actwidth, actheight = active_window.get_geometry()
+def findWindow( direction, window_list, workspace_id, active_window, active_frame, buff, verbose, rotateAngles ):
+    winInfo = active_frame.get_geometry()
+    actx = winInfo.x
+    acty = winInfo.y
+    actwidth = winInfo.width
+    actheight = winInfo.height
+    #actx, acty, actwidth, actheight = active_window.get_geometry()
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
 
@@ -105,21 +147,28 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
 
     # Do a quick filter of all windows in the desired direction
     for window in window_list:
-        if window.is_skip_tasklist() == True:
+        frame = getFrame( window )
+        windowState = ewmh.getWmState(window)
+
+        if windowState == "_NET_WM_STATE_SKIP_TASKBAR":
             continue
 
-        if window.is_minimized() == True:
+        if windowState == "_NET_WM_STATE_HIDDEN":
             continue
 
-        if window.is_sticky() == True:
+        if windowState == "_NET_WM_STATE_STICKY":
             window_workspaceid = workspace_id
         else:
-            window_workspaceid = window.get_workspace().get_number()
+            window_workspaceid = ewmh.getWmDesktop(window)
 
         if window_workspaceid == workspace_id:
             if window != active_window:
-
-                winx, winy, winwidth, winheight = window.get_geometry()
+                winInfo = frame.get_geometry()
+                winx = winInfo.x
+                winy = winInfo.y
+                winwidth = winInfo.width
+                winheight = winInfo.height
+                #winx, winy, winwidth, winheight = window.get_geometry()
                 winCenterX = winx + ( winwidth / 2 )
                 winCenterY = winy + ( winheight / 2 )
 
@@ -146,7 +195,14 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
     adjacent_windows = []
     nonadjacent_windows = []
     for window in valid_destinations:
-        x,y,w,h = window.get_geometry()
+        frame = getFrame(window)
+        winInfo = frame.get_geometry()
+        x = winInfo.x
+        y = winInfo.y
+        w = winInfo.width
+        h = winInfo.height
+
+        #x,y,w,h = window.get_geometry()
 
         if isOverlapped( selectXLeft, selectXRight, selectYTop, selectYBot, x, y, w, h ):
             adjacent_windows.extend( [window] )
@@ -165,34 +221,41 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
     closestDistance = -1.0
     closestAngle = -360.0
     for window in selectable_windows:
-        curDist = getDistBetweenWindows( active_window, window )
-        curAngle = getAngleBetweenWindows( active_window, window )
+        frame = getFrame( window )
+        curDist = getDistBetweenWindows( active_frame, frame, verbose )
+        curAngle = getAngleBetweenWindows( active_frame, frame, rotateAngles )
 
         if verbose:
             print( "************************************************" )
-            print( "Testing Window:",window.get_name() )
+            print( "Testing Window:",ewmh.getWmName(window) )
             print( "CurAngle:", curAngle )
             print( "ClosestAngle:", closestAngle )
             print( "CurDist:", curDist )
             print( "ClosestDist:", closestDistance )
 
         # Filter out windows that are too far out of angle
-        if not isInValidDirection( direction, curAngle, 50 ):
+        if not isInValidDirection( direction, curAngle, 50, verbose ):
             if verbose:
                 print( "Angle is outside of filter" )
             continue
 
         # Reduce distance based on angle correctness
-        x,y,w,h = window.get_geometry()
-        if isInValidDirection( direction, curAngle, 5 ):
+        winInfo = frame.get_geometry()
+        x = winInfo.x
+        y = winInfo.y
+        w = winInfo.width
+        h = winInfo.height
+
+        #x,y,w,h = window.get_geometry()
+        if isInValidDirection( direction, curAngle, 5, verbose ):
             if verbose:
                 print( "Angle is in the right direction treat it 70% closer" )
             curDist = curDist * 0.3
-        elif isInValidDirection( direction, curAngle, 20 ):
+        elif isInValidDirection( direction, curAngle, 20, verbose ):
             if verbose:
                 print( "Angle is in the right direction treat it 50% closer" )
             curDist = curDist * 0.5
-        elif isInValidDirection( direction, curAngle, 30 ):
+        elif isInValidDirection( direction, curAngle, 30, verbose ):
             if verbose:
                 print( "Angle is in the right direction treat it 20% closer" )
             curDist = curDist * 0.8
@@ -200,6 +263,7 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
         # Bonus reduciton if in cardinal direction
         if isInCardinalDirection( direction, actx, acty, actwidth, actheight, x, y, w, h ):
             if verbose:
+                print( "Search Direction:", direction)
                 print( "Window in cardinal direction, treat it 50% closer" )
             curDist = curDist * 0.5
 
@@ -213,7 +277,7 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             closestDistance = curDist
             closestAngle = curAngle
             if verbose:
-                print( "Window picked:", window.get_name() )
+                print( "Window picked:", ewmh.getWmName(window) )
             dest_window = window
             continue
 
@@ -222,7 +286,7 @@ def findWindow( direction, window_list, workspace_id, active_window, buff, verbo
             closestDistance = curDist
             closestAngle = curAngle
             if verbose:
-                print( "Picked:", window.get_name() )
+                print( "Picked:", ewmh.getWmName(window) )
             dest_window = window
 
     return dest_window
@@ -238,13 +302,14 @@ def main(argv):
     buff = 20
 
     try:
-        opts, args = getopt.getopt(argv,"hudlrb:v")
+        opts, args = getopt.getopt(argv,"hudlrb:va")
     except getopt.GetoptError as err:
         printHelp()
         sys.exit(2)
 
     direction = ""
     verbose = False
+    rotAngles = False
 
     for opt, arg in opts:
         if opt == "-h":
@@ -262,30 +327,47 @@ def main(argv):
             buff = int(arg)
         elif opt == "-v":
             verbose = True
+        elif opt == "-a":
+            rotAngles = True
 
     # Grab window list and geo
-    Gtk.init([])  # necessary if not using a Gtk.main() loop
-    screen = Wnck.Screen.get_default()
-    screen.force_update()  # recommended per Wnck documentation
+    #Gtk.init([])  # necessary if not using a Gtk.main() loop
+    #screen = Wnck.Screen.get_default()
+    #screen.force_update()  # recommended per Wnck documentation
 
-    window_list = screen.get_windows()
-    active_window = screen.get_active_window()
+    #window_list = screen.get_windows()
+    #active_window = screen.get_active_window()
 
-    workspace_id = screen.get_active_workspace().get_number()
+    #workspace_id = screen.get_active_workspace().get_number()
+
+    window_list = ewmh.getClientList()
+    active_window = ewmh.getActiveWindow()
+    active_frame = getFrame(active_window)
+    workspace_id = ewmh.getCurrentDesktop()
+
+    window = None
+
+    window_list = list(window_list)
+
+    activeInfo = active_window.get_geometry()
 
     if len(window_list) > 0:
-        window = findWindow( direction, window_list, workspace_id, active_window, buff, verbose )
+        window = findWindow( direction, window_list, workspace_id, active_window, active_frame, buff, verbose, rotAngles )
+        if window == None and verbose:
+            print( "No window selected" )
     else:
         print( "Empty window list!" )
         sys.exit(2)
 
     if window != None:
-        now = GdkX11.x11_get_server_time(Gdk.get_default_root_window())
-        window.activate(now)
+        #now = GdkX11.x11_get_server_time(Gdk.get_default_root_window())
+        #window.activate(now)
+        ewmh.setActiveWindow(window)
+        ewmh.display.flush()
 
     window = None
     screen = None
-    Wnck.shutdown()
+    #Wnck.shutdown()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
