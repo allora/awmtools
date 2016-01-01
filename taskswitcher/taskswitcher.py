@@ -2,11 +2,6 @@
 
 import sys, getopt
 from math import atan2, degrees, pi, hypot
-#import gi
-#gi.require_version('Wnck', '3.0')
-#gi.require_version('GdkX11', '3.0')
-#gi.require_version('Gtk', '3.0')
-#from gi.repository import Gtk, Wnck, GdkX11, Gdk
 from ewmh import EWMH
 
 ewmh = EWMH()
@@ -60,8 +55,6 @@ def getDistBetweenWindows( window1, window2, verbose ):
 def getAngleBetweenWindows( window1, window2, rotOutput ):
     winInfo1 = window1.get_geometry()
     winInfo2 = window2.get_geometry()
-    #x1,y1,w1,h1 = window1.get_geometry()
-    #x2,y2,w2,h2 = window2.get_geometry()
 
     x2 = winInfo2.x
     y2 = winInfo2.y
@@ -122,6 +115,7 @@ def isInCardinalDirection( direction, ax, ay, aw, ah, x, y, w, h ):
         isValidXL = ax <= x and ax+aw >= x
         isValidXR = ax <= x+w and ax+aw >= x+w
         return isValidXL or isValidXR
+    # Horizontal
     if direction == "LEFT" or direction == "RIGHT":
         isValidYT = ay <= y and ay+ah >= y
         isValidYB = ay <= y+h and ay+ah >= y+h
@@ -134,7 +128,6 @@ def findWindow( direction, window_list, workspace_id, active_window, active_fram
     acty = winInfo.y
     actwidth = winInfo.width
     actheight = winInfo.height
-    #actx, acty, actwidth, actheight = active_window.get_geometry()
     act_abs_width = actx + actwidth
     act_abs_height = acty + actheight
 
@@ -202,8 +195,6 @@ def findWindow( direction, window_list, workspace_id, active_window, active_fram
         w = winInfo.width
         h = winInfo.height
 
-        #x,y,w,h = window.get_geometry()
-
         if isOverlapped( selectXLeft, selectXRight, selectYTop, selectYBot, x, y, w, h ):
             adjacent_windows.extend( [window] )
         else:
@@ -246,7 +237,6 @@ def findWindow( direction, window_list, workspace_id, active_window, active_fram
         w = winInfo.width
         h = winInfo.height
 
-        #x,y,w,h = window.get_geometry()
         if isInValidDirection( direction, curAngle, 5, verbose ):
             if verbose:
                 print( "Angle is in the right direction treat it 70% closer" )
@@ -330,16 +320,6 @@ def main(argv):
         elif opt == "-a":
             rotAngles = True
 
-    # Grab window list and geo
-    #Gtk.init([])  # necessary if not using a Gtk.main() loop
-    #screen = Wnck.Screen.get_default()
-    #screen.force_update()  # recommended per Wnck documentation
-
-    #window_list = screen.get_windows()
-    #active_window = screen.get_active_window()
-
-    #workspace_id = screen.get_active_workspace().get_number()
-
     window_list = ewmh.getClientList()
     active_window = ewmh.getActiveWindow()
     active_frame = getFrame(active_window)
@@ -360,14 +340,11 @@ def main(argv):
         sys.exit(2)
 
     if window != None:
-        #now = GdkX11.x11_get_server_time(Gdk.get_default_root_window())
-        #window.activate(now)
         ewmh.setActiveWindow(window)
         ewmh.display.flush()
 
     window = None
     screen = None
-    #Wnck.shutdown()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
