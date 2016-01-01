@@ -65,7 +65,7 @@ All you need to do to set this up is clone the git into the directory of your ch
 
 ### Demo
 
-![Image of Demo](http://giant.gfycat.com/SleepyAltruisticGoose.gif)
+[![Image of Demo](http://giant.gfycat.com/SleepyAltruisticGoose.gif)]
 HTML5 [video] (http://gfycat.com/SleepyAltruisticGoose)
 
 ### Examples
