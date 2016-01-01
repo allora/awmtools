@@ -11,7 +11,7 @@ from ewmh import EWMH
 
 ewmh = EWMH()
 
-VERSION = "0.0.1-7"
+VERSION = "0.0.1-8"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
