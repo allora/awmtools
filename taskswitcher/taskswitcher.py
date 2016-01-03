@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/bin/env python3
 
 import sys, getopt
 from math import atan2, degrees, pi, hypot
@@ -6,7 +6,7 @@ from ewmh import EWMH
 
 ewmh = EWMH()
 
-VERSION = "0.0.1-8"
+VERSION = "0.0.1-9"
 
 def printHelp():
     print( "taskswitcher v",VERSION )
@@ -152,7 +152,10 @@ def findWindow( direction, window_list, workspace_id, active_window, active_fram
         if windowState == "_NET_WM_STATE_STICKY":
             window_workspaceid = workspace_id
         else:
-            window_workspaceid = ewmh.getWmDesktop(window)
+            try:
+                window_workspaceid = ewmh.getWmDesktop(window)
+            except:
+                window_workspaceid = 0;
 
         if window_workspaceid == workspace_id:
             if window != active_window:
@@ -323,7 +326,11 @@ def main(argv):
     window_list = ewmh.getClientList()
     active_window = ewmh.getActiveWindow()
     active_frame = getFrame(active_window)
-    workspace_id = ewmh.getCurrentDesktop()
+
+    try:
+        workspace_id = ewmh.getCurrentDesktop()
+    except:
+        workspace_id = 0;
 
     window = None
 
