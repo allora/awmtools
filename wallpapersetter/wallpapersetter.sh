@@ -14,6 +14,12 @@ puts() {
     printf -- "$1\n" "${@:2}"
 }
 
+err() { # strings -> stderr
+	local msg
+
+	puts "$progn: $1" "${@:2}" >&2
+}
+
 create_menu() {
 
     local key
