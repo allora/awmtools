@@ -1,14 +1,10 @@
 #!/usr/bin/python
 
 import sys, getopt
-import gi
-gi.require_version('Wnck', '3.0')
-gi.require_version('GdkX11', '3.0')
-gi.require_version('Gtk', '3.0')
+from ewmh import EWMH
 
-from gi.repository import Gtk, Wnck
-
-VERSION = "0.0.1-2"
+ewmh = EWMH()
+VERSION = "0.0.1-3"
 
 def printHelp():
     print( "Help stuff!" )
@@ -38,20 +34,24 @@ def main(argv):
             printHelp()
             sys.exit()
         elif opt == "-x":
-            xpos = float(arg)
+            xpos = int(arg)
         elif opt == "-y":
-            ypos = float(arg)
+            ypos = int(arg)
         elif opt == "-v":
             verbose = True
 
-    # Grab window list
-    Gtk.init([])
-    screen = Wnck.Screen.get_default()
-    screen.force_update()
+    # Grab active window
+    ewmh.display.flush()
+    window = ewmh.getActiveWindow()
 
-    active_window = screen.get_active_window()
+    active_window = window
+    while active_window.query_tree().parent != ewmh.root:
+        active_window = active_window.query_tree().parent
 
-    x,y,width,height = active_window.get_geometry()
+    wininfo = active_window.get_geometry()
+
+    if verbose == True:
+        print( "Window Info: X:", wininfo.x, "Y:", wininfo.y, "W:", wininfo.width, "H:", wininfo.height )
 
     newx = 0
     newy = 0
@@ -60,18 +60,26 @@ def main(argv):
         newx = xpos
         newy = ypos
     else:
-        if xpos != 0:
-            newx = x + xpos
-        if ypos != 0:
-            newy = y + ypos
-
-    moveMask = Wnck.WindowMoveResizeMask.X | Wnck.WindowMoveResizeMask.Y
+        newx = wininfo.x + xpos
+        newy = wininfo.y + ypos
 
     if verbose == True:
-        print( "Old X:", x, "New X:", newx )
-        print( "Old Y:", y, "New Y:", newy )
+        print( "Calculated X:", newx )
+        print( "Calculated Y:", newy )
 
-    active_window.set_geometry( Wnck.WindowGravity.NORTHWEST, moveMask, newx, newy, width, height )
+    #moveMask = Wnck.WindowMoveResizeMask.X | Wnck.WindowMoveResizeMask.Y
+    if newx < 0:
+        newx = 0
+    if newy < 0:
+        newy = 0
+
+    if verbose == True:
+        print( "Old X:", wininfo.x, "New X:", newx )
+        print( "Old Y:", wininfo.y, "New Y:", newy )
+
+    ewmh.setMoveResizeWindow(active_window, 0, newx, newy, wininfo.width, wininfo.height)
+    #active_window.set_geometry( Wnck.WindowGravity.NORTHWEST, moveMask, newx, newy, width, height )
+    ewmh.display.flush()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
