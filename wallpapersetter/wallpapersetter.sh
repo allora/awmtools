@@ -23,7 +23,6 @@ err() { # strings -> stderr
 create_menu() {
 
     local key
-    # for key in "${menu[@]}"; do
     shopt -s nullglob
     for key in *; do
         [[ -e $key ]] || continue
